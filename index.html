@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10111b">
+    <meta name="description" content="Challenge an unbeatable computer to a game of Tic-Tac-Toe.">
+    <title>Tic-Tac-Toe Battle</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #10111b;
+        color: #f4f5fb;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --cyan: #56e8f5;
+        --coral: #ff8588;
+        --muted: #a2a4b8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 28px 18px;
+        background:
+          radial-gradient(ellipse at 50% 0%, rgb(68 63 126 / 26%), transparent 52%),
+          #10111b;
+      }
+
+      main {
+        width: min(100%, 470px);
+        text-align: center;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--cyan);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 8vw, 3rem);
+        letter-spacing: -0.055em;
+      }
+
+      .subtitle {
+        margin: 10px 0 26px;
+        color: var(--muted);
+        font-size: 0.96rem;
+      }
+
+      .game {
+        padding: clamp(18px, 5vw, 28px);
+        border: 1px solid rgb(255 255 255 / 9%);
+        border-radius: 24px;
+        background: linear-gradient(145deg, rgb(36 38 57 / 96%), rgb(24 25 39 / 98%));
+        box-shadow: 0 24px 80px rgb(0 0 0 / 36%);
+      }
+
+      .status {
+        min-height: 28px;
+        margin: 0 0 18px;
+        color: #f4f5fb;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .cell {
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 1px solid rgb(255 255 255 / 7%);
+        border-radius: 15px;
+        background: #303148;
+        color: #fff;
+        font: inherit;
+        font-size: clamp(3rem, 15vw, 5rem);
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+        transition: background 140ms ease, transform 140ms ease, border-color 140ms ease;
+      }
+
+      .cell:not(:disabled):hover {
+        transform: translateY(-2px);
+        border-color: rgb(86 232 245 / 50%);
+        background: #393b57;
+      }
+
+      .cell:focus-visible,
+      .restart:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+      }
+
+      .cell:disabled {
+        cursor: default;
+      }
+
+      .cell.x {
+        color: var(--cyan);
+      }
+
+      .cell.o {
+        color: var(--coral);
+      }
+
+      .cell.winning {
+        border-color: var(--cyan);
+        background: rgb(86 232 245 / 14%);
+      }
+
+      .restart {
+        width: 100%;
+        min-height: 50px;
+        margin-top: 20px;
+        border: 0;
+        border-radius: 12px;
+        background: #13a984;
+        color: #fff;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background 140ms ease, transform 140ms ease;
+      }
+
+      .restart:hover {
+        transform: translateY(-1px);
+        background: #18bb94;
+      }
+
+      .hint {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">⚔ The classic, reimagined</p>
+      <h1>Tic-Tac-Toe Battle</h1>
+      <p class="subtitle">Can you outsmart the computer?</p>
+
+      <section class="game" aria-label="Tic-Tac-Toe game">
+        <p class="status" id="status" role="status" aria-live="polite">Your turn! You are X</p>
+        <div class="board" id="board" role="group" aria-label="Game board"></div>
+        <button class="restart" id="restart" type="button">↻&nbsp; Restart Battle</button>
+      </section>
+      <p class="hint">You play as <span style="color: var(--cyan); font-weight: 800;">X</span>. The computer plays as <span style="color: var(--coral); font-weight: 800;">O</span>.</p>
+    </main>
+
+    <script>
+      const winningCombos = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6],
+      ];
+      const boardElement = document.querySelector("#board");
+      const statusElement = document.querySelector("#status");
+      const restartButton = document.querySelector("#restart");
+      let board = Array(9).fill("");
+      let gameOver = false;
+      let computerTurn = false;
+      let pendingMove = null;
+
+      function winningCombo(state, player) {
+        return winningCombos.find((combo) => combo.every((index) => state[index] === player)) ?? null;
+      }
+
+      function renderBoard(winningLine = []) {
+        boardElement.replaceChildren();
+        board.forEach((mark, index) => {
+          const cell = document.createElement("button");
+          cell.type = "button";
+          cell.className = `cell${mark ? ` ${mark.toLowerCase()}` : ""}${winningLine.includes(index) ? " winning" : ""}`;
+          cell.textContent = mark;
+          cell.disabled = Boolean(mark) || gameOver || computerTurn;
+          cell.setAttribute("aria-label", mark ? `Cell ${index + 1}: ${mark}` : `Cell ${index + 1}: empty`);
+          cell.addEventListener("click", () => makeMove(index));
+          boardElement.append(cell);
+        });
+      }
+
+      function finishGame(message, winningLine = []) {
+        gameOver = true;
+        computerTurn = false;
+        if (pendingMove !== null) {
+          window.clearTimeout(pendingMove);
+          pendingMove = null;
+        }
+        statusElement.textContent = message;
+        renderBoard(winningLine);
+      }
+
+      function makeMove(index) {
+        if (gameOver || computerTurn || board[index] !== "") return;
+
+        board[index] = "X";
+        const humanWin = winningCombo(board, "X");
+        if (humanWin) {
+          finishGame("You win! 🏆", humanWin);
+          return;
+        }
+        if (board.every(Boolean)) {
+          finishGame("It's a draw! 🤝");
+          return;
+        }
+
+        computerTurn = true;
+        statusElement.textContent = "Computer is thinking…";
+        renderBoard();
+        pendingMove = window.setTimeout(computerMove, 400);
+      }
+
+      function minimax(state, depth, maximizing) {
+        if (winningCombo(state, "O")) return 10 - depth;
+        if (winningCombo(state, "X")) return depth - 10;
+        if (state.every(Boolean)) return 0;
+
+        let best = maximizing ? -Infinity : Infinity;
+        for (let index = 0; index < state.length; index += 1) {
+          if (state[index] !== "") continue;
+          state[index] = maximizing ? "O" : "X";
+          const score = minimax(state, depth + 1, !maximizing);
+          state[index] = "";
+          best = maximizing ? Math.max(best, score) : Math.min(best, score);
+        }
+        return best;
+      }
+
+      function computerMove() {
+        pendingMove = null;
+        if (gameOver) return;
+
+        const availableMoves = board
+          .map((cell, index) => (cell === "" ? index : -1))
+          .filter((index) => index !== -1);
+        if (availableMoves.length === 0) {
+          finishGame("It's a draw! 🤝");
+          return;
+        }
+
+        let bestScore = -Infinity;
+        let bestMoves = [];
+        for (const index of availableMoves) {
+          board[index] = "O";
+          const score = minimax(board, 0, false);
+          board[index] = "";
+          if (score > bestScore) {
+            bestScore = score;
+            bestMoves = [index];
+          } else if (score === bestScore) {
+            bestMoves.push(index);
+          }
+        }
+
+        const move = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+        board[move] = "O";
+        const computerWin = winningCombo(board, "O");
+        if (computerWin) {
+          finishGame("Computer wins! 🤖", computerWin);
+        } else if (board.every(Boolean)) {
+          finishGame("It's a draw! 🤝");
+        } else {
+          computerTurn = false;
+          statusElement.textContent = "Your turn! You are X";
+          renderBoard();
+        }
+      }
+
+      function restartGame() {
+        if (pendingMove !== null) {
+          window.clearTimeout(pendingMove);
+          pendingMove = null;
+        }
+        board = Array(9).fill("");
+        gameOver = false;
+        computerTurn = false;
+        statusElement.textContent = "Your turn! You are X";
+        renderBoard();
+      }
+
+      restartButton.addEventListener("click", restartGame);
+      renderBoard();
+    </script>
+  </body>
+</html>

@@ -1,14 +1,19 @@
 # Tic-Tac-Toe Battle
 
-This repository includes the original Python/Tkinter desktop game (`tic2.py`) and a browser version (`index.html`). Vercel hosts the browser version; the Tkinter app remains a local desktop application.
+Tic-Tac-Toe Battle is a small game where you play as X against a computer opponent. The browser version uses the minimax algorithm for the computer's moves and runs without installing anything. The repository also contains a Python/Tkinter desktop version.
 
-## Run locally
+## Play in your browser
 
-Open `index.html` in a browser. The web version has no build step or external dependencies.
+Open `index.html` in a modern browser.
+
+## Run the desktop version
+
+With Python and Tkinter installed, run:
+
+```powershell
+python tic2.py
+```
 
 ## Deploy to Vercel
 
-1. Sign in to [Vercel](https://vercel.com/) with the GitHub account that can access this repository.
-2. Select **Add New… → Project** and import `Vish0nix/tic-tac-toe-game`.
-3. Leave the framework preset as **Other** and the build and output settings empty, then select **Deploy**.
-4. Vercel will provide a URL for the deployed game. Future pushes to the connected branch deploy automatically.
+Import `Vish0nix/tic-tac-toe-game` as a project in Vercel. Select **Other** as the framework preset; no build command or output directory is needed. Deploy to publish the browser version.
